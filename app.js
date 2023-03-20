@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
 const express = require('express');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const userRouter = require('./routes/users');
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -13,6 +15,8 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
+app.use(bodyParser.json());
+app.use('/users', userRouter);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
