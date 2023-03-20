@@ -7,8 +7,11 @@ const app = express();
 
 mongoose
   .connect('mongodb://127.0.0.1:27017/mestodb')
-  .then((res) => {
-    console.log(`Соединение с БД установлено. Ответ: ${res.Model}`);
+  .then(() => {
+    console.log('Соединение с БД установлено!');
+  })
+  .catch((err) => {
+    console.log(err);
   });
 
 app.listen(PORT, () => {
