@@ -6,6 +6,14 @@ module.exports.getUsers = (req, res) => {
     .catch((err) => res.status(500).send({ message: err.message }));
 };
 
+module.exports.getUserById = (req, res) => {
+  const { userId } = req.params;
+
+  User.findById(userId)
+    .then((user) => res.status(200).send({ data: user }))
+    .catch((err) => res.status(500).send({ message: err.message }));
+};
+
 module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
