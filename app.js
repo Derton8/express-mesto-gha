@@ -16,6 +16,13 @@ mongoose
     console.log(err);
   });
 app.use(bodyParser.json());
+
+app.use((req, res, next) => {
+  req.user = {
+    _id: '641854e1dfb1e9e1c726b0ee',
+  };
+  next();
+});
 app.use('/users', userRouter);
 
 app.listen(PORT, () => {
