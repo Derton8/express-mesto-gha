@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
 const express = require('express');
+
+const router = express.Router();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const userRouter = require('./routes/users');
@@ -27,6 +29,9 @@ app.use((req, res, next) => {
 
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
+app.use('/', (req, res) => {
+  res.status(404).send({ message: 'Error: 404' });
+});
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
