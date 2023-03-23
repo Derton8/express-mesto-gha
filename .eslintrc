@@ -27,15 +27,6 @@
           "_id"
         ]
       }
-    ],
-    "no-console": [
-      "warn",
-      {
-        "allow": [
-          "warn",
-          "error"
-        ]
-      }
     ]
   }
 }
