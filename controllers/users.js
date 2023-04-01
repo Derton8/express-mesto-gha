@@ -5,6 +5,7 @@ const {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  HTTP_STATUS_CONFLICT
 } = require('../utils/constants');
 
 module.exports.getUsers = (req, res) => {
@@ -34,11 +35,27 @@ module.exports.getUserById = (req, res) => {
 };
 
 module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name,
+    about,
+    avatar,
+    email,
+    password,
+  } = req.body;
 
-  User.create({ name, about, avatar })
+  User.create({
+    name,
+    about,
+    avatar,
+    email,
+    password,
+  })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
+      if (err.message.slice(0, 6) === 'E11000') {
+        res.status(HTTP_STATUS_CONFLICT).send({ message: 'При регистрации указан email, который уже существует.' });
+        return;
+      }
       if (err.name === 'ValidationError') {
         res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя.' });
         return;
