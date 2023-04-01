@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
 
@@ -7,7 +8,7 @@ const {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
-  HTTP_STATUS_CONFLICT
+  HTTP_STATUS_CONFLICT,
 } = require('../utils/constants');
 
 module.exports.getUsers = (req, res) => {
@@ -102,6 +103,38 @@ module.exports.updateAvatar = (req, res) => {
   User.findByIdAndUpdate(userId, { avatar }, { new: true })
     .then((user) => res.send({ data: user }))
     .catch(() => {
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка.' });
+    });
+};
+
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+  User.findOne({ email })
+    .orFail(() => {
+      throw new Error('NotFound');
+    })
+    .then(async (user) => {
+      const matched = await bcrypt.compare(password, user.password);
+      if (matched) {
+        const token = jwt.sign({ _id: user._id }, 'MY_SECRET_KEY');
+        res.cookie('jwt', token, {
+          maxAge: 7 * 24 * 3600000,
+          httpOnly: true,
+        })
+          .send(user);
+      } else {
+        throw new Error('NotFound');
+      }
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при авторизации пользователя.' });
+        return;
+      }
+      if (err.message === 'NotFound') {
+        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным email или паролем не найден.' });
+        return;
+      }
       res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка.' });
     });
 };
