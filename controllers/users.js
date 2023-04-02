@@ -21,7 +21,7 @@ module.exports.getUsers = (req, res) => {
 module.exports.getUserById = (req, res) => {
   const { userId } = req.params;
   if (!mongoose.isValidObjectId(userId)) {
-    res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан некорректный id для создания пользователя.' });
+    res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан некорректный id пользователя.' });
     return;
   }
   User.findById(userId)
@@ -31,7 +31,27 @@ module.exports.getUserById = (req, res) => {
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.message === 'NotFound') {
-        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена.' });
+        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным id не найден.' });
+        return;
+      }
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка.' });
+    });
+};
+
+module.exports.getMe = (req, res) => {
+  const userId = req.user._id;
+  if (!mongoose.isValidObjectId(userId)) {
+    res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан некорректный id пользователя.' });
+    return;
+  }
+  User.findById(userId)
+    .orFail(() => {
+      throw new Error('NotFound');
+    })
+    .then((user) => res.send({ data: user }))
+    .catch((err) => {
+      if (err.message === 'NotFound') {
+        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным id не найден.' });
         return;
       }
       res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка.' });
