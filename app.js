@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 
+const auth = require('./middlewares/auth');
 const userRouter = require('./routes/users');
 const cardRouter = require('./routes/cards');
 const {
@@ -12,6 +13,7 @@ const {
 
 const { PORT = 3000 } = process.env;
 const app = express();
+app.use(bodyParser.json());
 
 mongoose
   .connect('mongodb://127.0.0.1:27017/mestodb')
@@ -21,18 +23,12 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
-app.use(bodyParser.json());
-
-app.use((req, res, next) => {
-  req.user = {
-    _id: '641854e1dfb1e9e1c726b0ee',
-  };
-  next();
-});
 
 app.post('/signin', login);
 app.post('/signup', createUser);
 
+app.use(auth);
+// роуты, которым авторизация нужна
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
 app.use('/', (req, res) => {
@@ -41,8 +37,4 @@ app.use('/', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
-});
-
-app.get('/', (req, res) => {
-  res.send('Hello, world');
 });
