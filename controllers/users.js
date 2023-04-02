@@ -9,6 +9,7 @@ const {
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
   HTTP_STATUS_CONFLICT,
+  HTTP_STATUS_UNAUTHORIZED,
 } = require('../utils/constants');
 
 module.exports.getUsers = (req, res) => {
@@ -117,10 +118,11 @@ module.exports.login = (req, res) => {
       const matched = await bcrypt.compare(password, user.password);
       if (matched) {
         const token = jwt.sign({ _id: user._id }, 'MY_SECRET_KEY');
-        res.cookie('jwt', token, {
-          maxAge: 7 * 24 * 3600000,
-          httpOnly: true,
-        })
+        res
+          .cookie('jwt', token, {
+            maxAge: 7 * 24 * 3600000,
+            httpOnly: true,
+          })
           .send(user);
       } else {
         throw new Error('NotFound');
@@ -132,7 +134,7 @@ module.exports.login = (req, res) => {
         return;
       }
       if (err.message === 'NotFound') {
-        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным email или паролем не найден.' });
+        res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Неправильные почта или пароль.' });
         return;
       }
       res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка.' });
