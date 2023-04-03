@@ -91,7 +91,7 @@ module.exports.dislikeCard = ((req, res) => {
     .orFail()
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.name === 'DocumenCtNotFoundError') {
+      if (err.name === 'DocumentNotFoundError') {
         res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена.' });
         return;
       }

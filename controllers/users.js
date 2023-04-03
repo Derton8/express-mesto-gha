@@ -63,17 +63,37 @@ module.exports.createUser = (req, res) => {
     password,
   } = req.body;
 
+  try {
+    if (!password) {
+      throw new Error('InvalidPassword');
+    }
+    if (!email) {
+      throw new Error('InvalidEmail');
+    }
+  } catch (err) {
+    if (err.message === 'InvalidEmail') {
+      res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Введите email.' });
+      return;
+    }
+    if (err.message === 'InvalidPasswrod') {
+      res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Введите пароль.' });
+      return;
+    }
+  }
+
   bcrypt.hash(password, 10)
-    .then((hash) => User.create({
-      name,
-      about,
-      avatar,
-      email,
-      password: hash,
-    }))
-    .then((user) => res.send({ data: user }))
+    .then(async (hash) => {
+      const user = await User.create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      });
+      return res.send({ data: user });
+    })
     .catch((err) => {
-      if (err.message.slice(0, 6) === 'E11000') {
+      if (err.code === 11000) {
         res.status(HTTP_STATUS_CONFLICT).send({ message: 'При регистрации указан email, который уже существует.' });
         return;
       }
@@ -81,7 +101,7 @@ module.exports.createUser = (req, res) => {
         res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя.' });
         return;
       }
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка.' });
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: err });
     });
 };
 
