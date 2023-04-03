@@ -62,7 +62,6 @@ module.exports.createUser = (req, res) => {
     email,
     password,
   } = req.body;
-
   try {
     if (!password) {
       throw new Error('InvalidPassword');
@@ -75,12 +74,11 @@ module.exports.createUser = (req, res) => {
       res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Введите email.' });
       return;
     }
-    if (err.message === 'InvalidPasswrod') {
+    if (err.message === 'InvalidPassword') {
       res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Введите пароль.' });
       return;
     }
   }
-
   bcrypt.hash(password, 10)
     .then(async (hash) => {
       const user = await User.create({
@@ -90,7 +88,7 @@ module.exports.createUser = (req, res) => {
         email,
         password: hash,
       });
-      return res.send({ data: user });
+      return res.send({ data: user.delPassword() });
     })
     .catch((err) => {
       if (err.code === 11000) {
@@ -101,7 +99,7 @@ module.exports.createUser = (req, res) => {
         res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя.' });
         return;
       }
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: err });
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка.' });
     });
 };
 
