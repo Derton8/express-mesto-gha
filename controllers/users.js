@@ -25,12 +25,10 @@ module.exports.getUserById = (req, res) => {
     return;
   }
   User.findById(userId)
-    .orFail(() => {
-      throw new Error('NotFound');
-    })
+    .orFail()
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
+      if (err.name === 'DocumentNotFoundError') {
         res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным id не найден.' });
         return;
       }
@@ -45,12 +43,10 @@ module.exports.getMe = (req, res) => {
     return;
   }
   User.findById(userId)
-    .orFail(() => {
-      throw new Error('NotFound');
-    })
+    .orFail()
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
+      if (err.name === 'DocumentNotFoundError') {
         res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным id не найден.' });
         return;
       }
@@ -97,13 +93,11 @@ module.exports.updateUser = (req, res) => {
     return;
   }
   User.findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
-    .orFail(() => {
-      throw new Error('NotFound');
-    })
+    .orFail()
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
-        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена.' });
+      if (err.name === 'DocumentNotFoundError') {
+        res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с данным id не найден.' });
         return;
       }
       if (err.name === 'ValidationError') {
@@ -130,10 +124,8 @@ module.exports.updateAvatar = (req, res) => {
 
 module.exports.login = (req, res) => {
   const { email, password } = req.body;
-  User.findOne({ email })
-    .orFail(() => {
-      throw new Error('NotFound');
-    })
+  User.findOne({ email }).select('+password')
+    .orFail()
     .then(async (user) => {
       const matched = await bcrypt.compare(password, user.password);
       if (matched) {
@@ -145,7 +137,7 @@ module.exports.login = (req, res) => {
           })
           .send(user);
       } else {
-        throw new Error('NotFound');
+        throw new Error('DocumentNotFoundError');
       }
     })
     .catch((err) => {
@@ -153,7 +145,7 @@ module.exports.login = (req, res) => {
         res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при авторизации пользователя.' });
         return;
       }
-      if (err.message === 'NotFound') {
+      if (err.name === 'DocumentNotFoundError' || err.message === 'DocumentNotFoundError') {
         res.status(HTTP_STATUS_UNAUTHORIZED).send({ message: 'Неправильные почта или пароль.' });
         return;
       }

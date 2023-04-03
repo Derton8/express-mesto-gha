@@ -5,6 +5,7 @@ const {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  HTTP_STATUS_FORBIDDEN,
 } = require('../utils/constants');
 
 module.exports.getCards = ((req, res) => {
@@ -18,7 +19,7 @@ module.exports.createCard = ((req, res) => {
   const owner = req.user._id;
 
   Card.create({ name, link, owner })
-    .then((card) => res.send({ card }))
+    .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки.' });
@@ -30,17 +31,27 @@ module.exports.createCard = ((req, res) => {
 
 module.exports.deleteCard = ((req, res) => {
   const { cardId } = req.params;
+  const userId = req.user._id;
   if (!mongoose.isValidObjectId(cardId)) {
     res.status(HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан некорректный id для удаления карточки.' });
     return;
   }
-  Card.findByIdAndDelete(cardId)
-    .orFail(() => {
-      throw new Error('NotFound');
+  Card.findById(cardId)
+    .orFail()
+    .then(async (card) => {
+      if (userId.toString() !== card.owner.toString()) {
+        throw new Error('Forbidden');
+      } else {
+        const cardDelete = await card.deleteOne();
+        return res.send({ data: cardDelete });
+      }
     })
-    .then((card) => res.send({ card }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
+      if (err.message === 'Forbidden') {
+        res.status(HTTP_STATUS_FORBIDDEN).send({ message: 'Объект принадлежит другому пользователю.' });
+        return;
+      }
+      if (err.name === 'DocumentNotFoundError') {
         res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена.' });
         return;
       }
@@ -57,12 +68,10 @@ module.exports.likeCard = ((req, res) => {
   }
   // $addToSet: добавить _id в массив, если его там нет
   Card.findByIdAndUpdate(cardId, { $addToSet: { likes: userId } }, { new: true })
-    .orFail(() => {
-      throw new Error('NotFound');
-    })
-    .then((card) => res.send({ card }))
+    .orFail()
+    .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
+      if (err.name === 'DocumentNotFoundError') {
         res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена.' });
         return;
       }
@@ -79,12 +88,10 @@ module.exports.dislikeCard = ((req, res) => {
   }
   // $pull: убрать _id из массива
   Card.findByIdAndUpdate(cardId, { $pull: { likes: userId } }, { new: true })
-    .orFail(() => {
-      throw new Error('NotFound');
-    })
-    .then((card) => res.send({ card }))
+    .orFail()
+    .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
+      if (err.name === 'DocumenCtNotFoundError') {
         res.status(HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена.' });
         return;
       }
