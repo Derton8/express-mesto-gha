@@ -3,15 +3,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+// eslint-disable-next-line no-unused-vars
+const { celebrate, Joi, errors } = require('celebrate');
 
 const NotFoundError = require('./utils/errors/not-found-err');
-const auth = require('./middlewares/auth');
-const userRouter = require('./routes/users');
-const cardRouter = require('./routes/cards');
-const {
-  createUser,
-  login,
-} = require('./controllers/users');
+const router = require('./routes');
 
 const { PORT = 3000 } = process.env;
 const app = express();
@@ -27,17 +23,15 @@ mongoose
     console.log(err);
   });
 
-app.post('/signin', login);
-app.post('/signup', createUser);
-app.use(auth);
-// роуты, которым авторизация нужна
-app.use('/users', userRouter);
-app.use('/cards', cardRouter);
+app.use('/', router);
 
 // обработка ошибок
 app.use('/', (req, res, next) => {
   next(new NotFoundError('Error: 404 Not Found'));
 });
+
+app.use(errors());
+
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
   res
