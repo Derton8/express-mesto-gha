@@ -6,6 +6,7 @@ const User = require('../models/user');
 const BadRequestError = require('../utils/errors/bad-req-err');
 const ConflictError = require('../utils/errors/conflict-err');
 const NotFoundError = require('../utils/errors/not-found-err');
+const UnauthorizedError = require('../utils/errors/unauthorized-err');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
@@ -139,7 +140,7 @@ module.exports.login = (req, res, next) => {
           })
           .send(user);
       } else {
-        next(new NotFoundError('Неправильные почта или пароль.'));
+        next(new UnauthorizedError('Неправильные почта или пароль.'));
       }
     })
     .catch((err) => {
@@ -148,7 +149,7 @@ module.exports.login = (req, res, next) => {
         return;
       }
       if (err.name === 'DocumentNotFoundError') {
-        next(new NotFoundError('Неправильные почта или пароль.'));
+        next(new UnauthorizedError('Неправильные почта или пароль.'));
         return;
       }
       next(err);
