@@ -3,8 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-// eslint-disable-next-line no-unused-vars
-const { celebrate, Joi, errors } = require('celebrate');
+const { errors } = require('celebrate');
 
 const NotFoundError = require('./utils/errors/not-found-err');
 const router = require('./routes');

@@ -58,14 +58,6 @@ module.exports.createUser = (req, res, next) => {
     email,
     password,
   } = req.body;
-  if (!email) {
-    next(new BadRequestError('Введите email.'));
-    return;
-  }
-  if (!password) {
-    next(new BadRequestError('Введите пароль.'));
-    return;
-  }
   bcrypt.hash(password, 10)
     .then(async (hash) => {
       const user = await User.create({
@@ -79,7 +71,7 @@ module.exports.createUser = (req, res, next) => {
     })
     .catch((err) => {
       if (err.code === 11000) {
-        next(new ConflictError('Переданы некорректные данные при регистрации.'));
+        next(new ConflictError('Пользователь с данным email уже существует.'));
         return;
       }
       if (err.name === 'ValidationError') {
