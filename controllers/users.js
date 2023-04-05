@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -16,38 +15,18 @@ module.exports.getUsers = (req, res, next) => {
 
 module.exports.getUserById = (req, res, next) => {
   const { userId } = req.params;
-  if (!mongoose.isValidObjectId(userId)) {
-    next(new BadRequestError('Передан некорректный id пользователя.'));
-    return;
-  }
   User.findById(userId)
-    .orFail()
+    .orFail(new NotFoundError('Пользователь с указанным id не найден.'))
     .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'DocumentNotFoundError') {
-        next(new NotFoundError('Пользователь с указанным id не найден.'));
-        return;
-      }
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.getMe = (req, res, next) => {
   const userId = req.user._id;
-  if (!mongoose.isValidObjectId(userId)) {
-    next(new BadRequestError('Передан некорректный id пользователя.'));
-    return;
-  }
   User.findById(userId)
-    .orFail()
+    .orFail(new NotFoundError('Пользователь с указанным id не найден.'))
     .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'DocumentNotFoundError') {
-        next(new NotFoundError('Пользователь с указанным id не найден.'));
-        return;
-      }
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.createUser = (req, res, next) => {
@@ -85,18 +64,10 @@ module.exports.createUser = (req, res, next) => {
 module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
   const userId = req.user._id;
-  if (!mongoose.isValidObjectId(userId)) {
-    next(new BadRequestError('Передан некорректный id пользователя.'));
-    return;
-  }
   User.findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true })
-    .orFail()
+    .orFail(new NotFoundError('Пользователь с указанным id не найден.'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.name === 'DocumentNotFoundError') {
-        next(NotFoundError('Пользователь с указанным id не найден.'));
-        return;
-      }
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при обновлении пользователя.'));
         return;
@@ -108,10 +79,6 @@ module.exports.updateUser = (req, res, next) => {
 module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   const userId = req.user._id;
-  if (!mongoose.isValidObjectId(userId)) {
-    next(new BadRequestError('Передан некорректный id пользователя.'));
-    return;
-  }
   User.findByIdAndUpdate(userId, { avatar }, { new: true })
     .then((user) => res.send({ data: user }))
     .catch(next);
@@ -120,7 +87,7 @@ module.exports.updateAvatar = (req, res, next) => {
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   User.findOne({ email }).select('+password')
-    .orFail()
+    .orFail(new UnauthorizedError('Неправильные почта или пароль.'))
     .then(async (user) => {
       const matched = await bcrypt.compare(password, user.password);
       if (matched) {
@@ -130,7 +97,7 @@ module.exports.login = (req, res, next) => {
             maxAge: 7 * 24 * 3600000,
             httpOnly: true,
           })
-          .send(user);
+          .send({ data: user.delPassword() });
       } else {
         next(new UnauthorizedError('Неправильные почта или пароль.'));
       }
@@ -138,10 +105,6 @@ module.exports.login = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при авторизации пользователя.'));
-        return;
-      }
-      if (err.name === 'DocumentNotFoundError') {
-        next(new UnauthorizedError('Неправильные почта или пароль.'));
         return;
       }
       next(err);

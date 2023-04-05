@@ -5,7 +5,6 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 
-const NotFoundError = require('./utils/errors/not-found-err');
 const router = require('./routes');
 
 const { PORT = 3000 } = process.env;
@@ -25,12 +24,7 @@ mongoose
 app.use('/', router);
 
 // обработка ошибок
-app.use('/', (req, res, next) => {
-  next(new NotFoundError('Error: 404 Not Found'));
-});
-
 app.use(errors());
-
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
   res
